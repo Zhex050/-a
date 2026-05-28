@@ -384,7 +384,7 @@ async function loadMarketStats(){
 }
 
 // ===== 热点板块 =====
-const escHtml=s=>String(s).replace(/[&<>"']/g,c=>`&#${c.charCodeAt(0)};`);
+function escQ(s){return String(s).replace(/'/g,'&apos;').replace(/"/g,'&quot;')}
 async function loadSectors(){
   const s=$('#sectorList');s.innerHTML='<div class="loading">加载中…</div>';
   try{
@@ -395,8 +395,8 @@ async function loadSectors(){
     html+='<div style="font-size:12px;color:var(--text2);margin-bottom:4px">🏭 行业板块</div>';
     if(r1&&r1.data&&r1.data.diff){
       r1.data.diff.forEach(i=>{
-        const n=escHtml(i.f14||'--'),chg=i.f3||0,code=escHtml(i.f12||'');
-        html+=`<div class="sector-item" onclick="loadSectorStocks('${code}','${n}')">
+        const n=i.f14||'--',chg=i.f3||0,code=i.f12||'';
+        html+=`<div class="sector-item" data-code="${code}" data-name="${escQ(n)}">
           <span class="name">${n}</span>
           <span class="change ${cls(chg)}">${pct(chg)}</span>
         </div>`;
@@ -406,8 +406,8 @@ async function loadSectors(){
     html+='<div style="font-size:12px;color:var(--text2);margin-bottom:4px">💡 概念板块</div>';
     if(r2&&r2.data&&r2.data.diff){
       r2.data.diff.forEach(i=>{
-        const n=escHtml(i.f14||'--'),chg=i.f3||0,code=escHtml(i.f12||'');
-        html+=`<div class="sector-item" onclick="loadSectorStocks('${code}','${n}')">
+        const n=i.f14||'--',chg=i.f3||0,code=i.f12||'';
+        html+=`<div class="sector-item" data-code="${code}" data-name="${escQ(n)}">
           <span class="name">${n}</span>
           <span class="change ${cls(chg)}">${pct(chg)}</span>
         </div>`;
@@ -415,6 +415,11 @@ async function loadSectors(){
     }
     html+='</div>';
     s.innerHTML=html;
+    // 事件委托
+    s.addEventListener('click',e=>{
+      const item=e.target.closest('.sector-item');
+      if(item)loadSectorStocks(item.dataset.code,item.dataset.name);
+    });
   }catch(e){s.innerHTML='<div style="color:var(--red);padding:8px">加载失败</div>'}
 }
 
@@ -487,11 +492,15 @@ async function loadMoneyFlow(){
     if(r&&r.data&&r.data.diff){
       f.innerHTML=r.data.diff.map(i=>{
         const flow=parseFloat(i.f62)||0;
-        return`<div class="flow-item" onclick="selectStock('${i.f12}','${i.f14||''}')">
+        return`<div class="flow-item" data-code="${i.f12}" data-name="${escQ(i.f14||'')}">
           <span class="name">${i.f14||'--'}</span>
           <span class="val ${cls(flow)}">${fmtLarge(flow)}</span>
         </div>`;
       }).join('');
+      f.addEventListener('click',e=>{
+        const item=e.target.closest('.flow-item');
+        if(item)selectStock(item.dataset.code,item.dataset.name);
+      });
     }
   }catch(e){f.innerHTML='<div style="color:var(--text3);padding:8px">加载失败</div>'}
 }
